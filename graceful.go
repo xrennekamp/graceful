@@ -10,15 +10,15 @@ import (
 	"time"
 )
 
-// DefaultTimeout is used if Graceful.Timeout is not set.
+// DefaultTimeout is used if Terminator.Timeout is not set.
 const DefaultTimeout = 10 * time.Second
 
 var (
-	// DefaultLogger is used if Graceful.Logger is not set. It uses the Go standard log package.
+	// DefaultLogger is used if Terminator.Logger is not set. It uses the Go standard log package.
 	DefaultLogger = &defaultLogger{}
 	// StdoutLogger can be used as a simple logger which writes to stdout via the fmt standard package.
 	StdoutLogger = &stdoutLogger{}
-	// DefaultSignals is used if Graceful.Signals is not set.
+	// DefaultSignals is used if Terminator.Signals is not set.
 	// The default shutdown signals are:
 	//   - SIGINT (triggered by pressing Control-C)
 	//   - SIGTERM (sent by `kill $pid` or e.g. systemd stop)
@@ -38,8 +38,8 @@ type serverKeeper struct {
 	timeout time.Duration
 }
 
-// Graceful implements graceful shutdown of servers.
-type Graceful struct {
+// Terminator implements graceful shutdown of servers.
+type Terminator struct {
 	// Timeout is the maximum amount of time to wait for still running server
 	// requests to finish when the shutdown signal was received for each server.
 	// It defaults to DefaultTimeout which is 10 seconds.
@@ -62,33 +62,33 @@ type Graceful struct {
 	manSig  chan interface{}
 }
 
-// New creates a Graceful. This is a convenience constructor if no changes to the default configuration are needed.
-func New() *Graceful {
-	return &Graceful{}
+// New creates a Terminator. This is a convenience constructor if no changes to the default configuration are needed.
+func New() *Terminator {
+	return &Terminator{}
 }
 
-func (f *Graceful) signals() []os.Signal {
+func (f *Terminator) signals() []os.Signal {
 	if f.Signals != nil {
 		return f.Signals
 	}
 	return DefaultSignals
 }
 
-func (f *Graceful) log() Logger {
+func (f *Terminator) log() Logger {
 	if f.Log != nil {
 		return f.Log
 	}
 	return DefaultLogger
 }
 
-func (f *Graceful) timeout() time.Duration {
+func (f *Terminator) timeout() time.Duration {
 	if f.Timeout != 0 {
 		return f.Timeout
 	}
 	return DefaultTimeout
 }
 
-func (f *Graceful) getManSig() chan interface{} {
+func (f *Terminator) getManSig() chan interface{} {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 	if f.manSig == nil {
@@ -104,12 +104,12 @@ func (f *Graceful) getManSig() chan interface{} {
 // To give the server a specific name instead of just "server #<num>":
 // 	fin.Add(srv, graceful.WithName("internal server"))
 //
-// To override the timeout, configured in Graceful, for this specific server:
+// To override the timeout, configured in Terminator, for this specific server:
 // 	fin.Add(srv, graceful.WithTimeout(5*time.Second))
 //
 // To do both at the same time:
 // 	fin.Add(srv, finish.WithName("internal server"), finish.WithTimeout(5*time.Second))
-func (f *Graceful) Add(srv Server, opts ...Option) {
+func (f *Terminator) Add(srv Server, opts ...Option) {
 	keeper := &serverKeeper{
 		srv:     srv,
 		timeout: f.timeout(),
@@ -125,7 +125,7 @@ func (f *Graceful) Add(srv Server, opts ...Option) {
 }
 
 // Wait blocks until one of the shutdown signals is received and then closes all servers with a timeout.
-func (f *Graceful) Wait() {
+func (f *Terminator) Wait() {
 	f.updateNames()
 
 	signals := f.signals()
@@ -163,11 +163,11 @@ func (f *Graceful) Wait() {
 }
 
 // Trigger the shutdown signal manually. This is probably only useful for testing.
-func (f *Graceful) Trigger() {
+func (f *Terminator) Trigger() {
 	f.getManSig() <- nil
 }
 
-func (f *Graceful) updateNames() {
+func (f *Terminator) updateNames() {
 	if len(f.keepers) == 1 && f.keepers[0].name == "" {
 		f.keepers[0].name = "server"
 		return

@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-// Logger is the interface expected by Graceful.Log.
+// Logger is the interface expected by Terminator.Log.
 // It allows using any logger which implements the Infof() and Errorf() methods.
 type Logger interface {
 	Infof(string, ...interface{})
