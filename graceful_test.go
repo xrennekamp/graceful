@@ -47,7 +47,7 @@ func Test(t *testing.T) {
 	srv := &testServer{wait: time.Second}
 	log := &logRecorder{}
 
-	fin := &Finisher{Log: log}
+	fin := &Terminator{Log: log}
 	fin.Add(srv)
 
 	keeper := fin.keepers[0]
@@ -97,7 +97,7 @@ func TestSettingName(t *testing.T) {
 	srv := &testServer{}
 	log := &logRecorder{}
 
-	fin := &Finisher{Log: log}
+	fin := &Terminator{Log: log}
 	fin.Add(srv, WithName("foobar"))
 
 	keeper := fin.keepers[0]
@@ -144,7 +144,7 @@ func TestUpdateNames(t *testing.T) {
 func TestGlobalTimeout(t *testing.T) {
 	srv := &testServer{}
 
-	fin := &Finisher{Timeout: 21 * time.Second}
+	fin := &Terminator{Timeout: 21 * time.Second}
 	fin.Add(srv)
 
 	keeper := fin.keepers[0]
@@ -171,7 +171,7 @@ func TestSlowServer(t *testing.T) {
 	srv := &testServer{wait: 2 * time.Second}
 	log := &logRecorder{}
 
-	fin := &Finisher{Log: log}
+	fin := &Terminator{Log: log}
 	fin.Add(srv, WithTimeout(time.Second))
 
 	go fin.Trigger()
@@ -198,7 +198,7 @@ func TestCustomSignal(t *testing.T) {
 
 	mySignal := syscall.SIGUSR1
 
-	fin := &Finisher{Log: log, Signals: []os.Signal{mySignal}}
+	fin := &Terminator{Log: log, Signals: []os.Signal{mySignal}}
 	fin.Add(srv)
 
 	go func() {

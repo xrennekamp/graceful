@@ -17,7 +17,7 @@ func Example() {
 
 	srv := &http.Server{Addr: "localhost:8080"}
 
-	fin := finish.New()
+	fin := graceful.New()
 	fin.Add(srv)
 
 	go func() {

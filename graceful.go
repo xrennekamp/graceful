@@ -41,7 +41,7 @@ type serverKeeper struct {
 // Terminator implements graceful shutdown of servers.
 type Terminator struct {
 	// Timeout is the maximum amount of time to wait for still running server
-	// requests to finish when the shutdown signal was received for each server.
+	// requests to graceful when the shutdown signal was received for each server.
 	// It defaults to DefaultTimeout which is 10 seconds.
 	//
 	// The timeout can be overridden on a per server basis with passing the
@@ -52,7 +52,7 @@ type Terminator struct {
 	// It defaults to DefaultLogger which uses the standard Go log package.
 	Log Logger
 
-	// Signals can be used to change which signals finish catches to initiate
+	// Signals can be used to change which signals graceful catches to initiate
 	// the shutdown.
 	// It defaults to DefaultSignals which contains SIGINT and SIGTERM.
 	Signals []os.Signal
@@ -108,7 +108,7 @@ func (f *Terminator) getManSig() chan interface{} {
 // 	fin.Add(srv, graceful.WithTimeout(5*time.Second))
 //
 // To do both at the same time:
-// 	fin.Add(srv, finish.WithName("internal server"), finish.WithTimeout(5*time.Second))
+// 	fin.Add(srv, graceful.WithName("internal server"), graceful.WithTimeout(5*time.Second))
 func (f *Terminator) Add(srv Server, opts ...Option) {
 	keeper := &serverKeeper{
 		srv:     srv,
@@ -143,21 +143,21 @@ func (f *Terminator) Wait() {
 		// Trigger() was called
 	}
 
-	f.log().Infof("finish: shutdown signal received")
+	f.log().Infof("graceful: shutdown signal received")
 
 	for _, keeper := range f.keepers {
 		ctx, cancel := context.WithTimeout(context.Background(), keeper.timeout)
 		defer cancel()
-		f.log().Infof("finish: shutting down %s ...", keeper.name)
+		f.log().Infof("graceful: shutting down %s ...", keeper.name)
 		err := keeper.srv.Shutdown(ctx)
 		if err != nil {
 			if err == context.DeadlineExceeded {
-				f.log().Errorf("finish: shutdown timeout for %s", keeper.name)
+				f.log().Errorf("graceful: shutdown timeout for %s", keeper.name)
 			} else {
-				f.log().Errorf("finish: error while shutting down %s: %s", keeper.name, err)
+				f.log().Errorf("graceful: error while shutting down %s: %s", keeper.name, err)
 			}
 		} else {
-			f.log().Infof("finish: %s closed", keeper.name)
+			f.log().Infof("graceful: %s closed", keeper.name)
 		}
 	}
 }
